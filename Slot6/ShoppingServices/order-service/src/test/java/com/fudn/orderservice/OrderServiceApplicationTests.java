@@ -1,5 +1,6 @@
 package com.fudn.orderservice;
 
+import com.fudn.orderservice.stub.InventoryStubs;
 import io.restassured.RestAssured;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,7 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.mysql.MySQLContainer;
+import com.github.tomakehurst.wiremock.WireMockServer;
+
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -16,6 +22,8 @@ class OrderServiceApplicationTests {
 
     @ServiceConnection
     static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.3.0");
+
+    static WireMockServer wireMockServer = new WireMockServer(options().dynamicPort());
 
     @LocalServerPort
     private Integer port;
@@ -28,6 +36,12 @@ class OrderServiceApplicationTests {
 
     static {
         mySQLContainer.start();
+        wireMockServer.start();
+    }
+
+    @DynamicPropertySource
+    static void registerProperties(DynamicPropertyRegistry registry) {
+        registry.add("inventory.url", () -> "http://localhost:" + wireMockServer.port());
     }
 
     @Test
@@ -39,6 +53,8 @@ class OrderServiceApplicationTests {
                      "quantity": 1
                 }
                 """;
+
+            InventoryStubs.stubInventoryCall(wireMockServer, "iphone_15", 1);
 
         var responseBodyString = RestAssured.given()
                 .contentType("application/json")
