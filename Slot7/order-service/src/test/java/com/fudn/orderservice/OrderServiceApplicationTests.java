@@ -8,22 +8,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.wiremock.spring.ConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
 import org.testcontainers.mysql.MySQLContainer;
-import com.github.tomakehurst.wiremock.WireMockServer;
 
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@EnableWireMock(@ConfigureWireMock(baseUrlProperties = "inventory.url"))
 class OrderServiceApplicationTests {
 
     @ServiceConnection
     static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.3.0");
-
-    static WireMockServer wireMockServer = new WireMockServer(options().dynamicPort());
 
     @LocalServerPort
     private Integer port;
@@ -36,12 +35,6 @@ class OrderServiceApplicationTests {
 
     static {
         mySQLContainer.start();
-        wireMockServer.start();
-    }
-
-    @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("inventory.url", () -> "http://localhost:" + wireMockServer.port());
     }
 
     @Test
@@ -54,7 +47,7 @@ class OrderServiceApplicationTests {
                 }
                 """;
 
-            InventoryStubs.stubInventoryCall(wireMockServer, "iphone_15", 1);
+        InventoryStubs.stubInventoryCall("iphone_15", 1);
 
         var responseBodyString = RestAssured.given()
                 .contentType("application/json")
@@ -68,5 +61,28 @@ class OrderServiceApplicationTests {
                 .body().asString();
 
         assertThat(responseBodyString, Matchers.is("Order Placed Successfully"));
+        verify(getRequestedFor(urlEqualTo("/api/inventory?skuCode=iphone_15&quantity=1")));
+        }
+
+        @Test
+        void shouldFailOrderWhenProductIsNotInStock() {
+        String submitOrderJson = """
+            {
+                 "skuCode": "iphone_15",
+                 "price": 1000,
+                 "quantity": 1000
+            }
+            """;
+
+        InventoryStubs.stubInventoryOutOfStock("iphone_15", 1000);
+
+        RestAssured.given()
+            .contentType("application/json")
+            .body(submitOrderJson)
+            .when()
+            .post("/api/order")
+            .then()
+            .log().all()
+            .statusCode(500);
     }
 }
