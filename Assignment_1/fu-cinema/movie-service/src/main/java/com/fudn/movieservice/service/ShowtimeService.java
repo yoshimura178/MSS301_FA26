@@ -25,6 +25,15 @@ public class ShowtimeService {
     private final MovieService movieService;
     private final RoomService roomService;
 
+    public List<ShowtimeResponse> search(String movieId, LocalDate date) {
+        List<Showtime> showtimes = (movieId == null || movieId.isBlank())
+                ? showtimeRepository.findAllByOrderByStartTimeAsc()
+                : showtimeRepository.findByMovieIdOrderByStartTimeAsc(movieId);
+        List<Showtime> filtered = showtimes.stream()
+                .filter(s -> date == null || s.getStartTime().toLocalDate().equals(date))
+                .toList();
+        return toResponses(filtered);
+    }
     public ShowtimeResponse getById(String id) {
         Showtime s = find(id);
         return ShowtimeResponse.from(s, movieService.find(s.getMovieId()), roomService.find(s.getRoomId()));
@@ -41,7 +50,14 @@ public class ShowtimeService {
         }
         return apply(showtime, request, id);
     }
-
+    public void cancel(String id) {
+        Showtime showtime = find(id);
+        showtime.setShowtimeStatus(ShowtimeStatus.CANCELLED);
+        showtimeRepository.save(showtime);
+    }
+    Showtime find(String id) {
+        return showtimeRepository.findById(id).orElseThrow(() -> ApiException.notFound("Showtime not found with id: " + id));
+    }
     private ShowtimeResponse apply(Showtime showtime, ShowtimeRequest request, String excludeId) {
         Movie movie = movieService.find(request.movieId());
         CinemaRoom room = roomService.find(request.roomId());
