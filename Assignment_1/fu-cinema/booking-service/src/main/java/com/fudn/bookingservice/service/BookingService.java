@@ -97,6 +97,11 @@ public class BookingService {
                 .stream().map(BookingResponse::from).toList();
     }
 
+    public BookingResponse getById(Long bookingId, Long userId, String role) {
+        return BookingResponse.from(findAccessible(bookingId, userId, role));
+    }
+
+    @Transactional
 
     private ShowtimeResponse fetchShowtime(String showtimeId) {
         try {
