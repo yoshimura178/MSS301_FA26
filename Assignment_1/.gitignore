@@ -1,0 +1,6 @@
+evidence_screenshots/
+*.docx
+fu-cinema/docker/
+.idea/
+target/
+*.iml
