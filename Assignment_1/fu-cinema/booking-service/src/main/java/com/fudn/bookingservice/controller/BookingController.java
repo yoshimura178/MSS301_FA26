@@ -32,4 +32,13 @@ public class BookingController {
         return bookingService.create(userId, request);
     }
 
+    @GetMapping("/my")
+    public List<BookingResponse> getMyBookings(@RequestHeader(USER_ID) Long userId) {
+        return bookingService.getMyBookings(userId);
+    }
+
+    @GetMapping
+    public List<BookingResponse> getAll() {
+        return bookingService.getAll();
+    }
 }
