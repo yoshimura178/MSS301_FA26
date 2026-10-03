@@ -46,7 +46,26 @@ public class MovieService {
         Movie movie = find(id);
         return MovieResponse.from(movie, genreService.find(movie.getGenreId()).getGenreName());
     }
-
+    public MovieResponse create(MovieRequest request) {
+        Movie movie = new Movie();
+        Genre genre = apply(movie, request);
+        return MovieResponse.from(movieRepository.save(movie), genre.getGenreName());
+    }
+    public MovieResponse update(String id, MovieRequest request) {
+        Movie movie = find(id);
+        Genre genre = apply(movie, request);
+        return MovieResponse.from(movieRepository.save(movie), genre.getGenreName());
+    }
+    public void delete(String id) {
+        Movie movie = find(id);
+        if (showtimeRepository.existsByMovieId(id)) {
+            throw ApiException.conflict("Cannot delete movie that already has showtimes. Set status to ENDED instead.");
+        }
+        movieRepository.delete(movie);
+    }
+    Movie find(String id) {
+        return movieRepository.findById(id).orElseThrow(() -> ApiException.notFound("Movie not found with id: " + id));
+    }
     private List<MovieResponse> toResponses(List<Movie> movies) {
         Map<String, String> genreNames = genreRepository.findAll().stream()
                 .collect(Collectors.toMap(Genre::getGenreId, Genre::getGenreName));
