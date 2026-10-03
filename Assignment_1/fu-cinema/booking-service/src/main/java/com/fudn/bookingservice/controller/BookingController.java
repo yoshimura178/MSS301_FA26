@@ -41,4 +41,25 @@ public class BookingController {
     public List<BookingResponse> getAll() {
         return bookingService.getAll();
     }
+
+    @GetMapping("/report")
+    public ReportResponse report(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return bookingService.report(startDate, endDate);
+    }
+
+    @GetMapping("/{id}")
+    public BookingResponse getById(@PathVariable Long id,
+                                   @RequestHeader(USER_ID) Long userId,
+                                   @RequestHeader(value = USER_ROLE, required = false) String role) {
+        return bookingService.getById(id, userId, role);
+    }
+
+    @PutMapping("/{id}/cancel")
+    public BookingResponse cancel(@PathVariable Long id,
+                                  @RequestHeader(USER_ID) Long userId,
+                                  @RequestHeader(value = USER_ROLE, required = false) String role) {
+        return bookingService.cancel(id, userId, role);
+    }
 }
