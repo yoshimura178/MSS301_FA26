@@ -18,7 +18,4 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
               and b.bookingDate < :to
             order by b.bookingDate desc
             """)
-    List<Booking> findForReport(@Param("status") BookingStatus status,
-                                @Param("from") LocalDateTime from,
-                                @Param("to") LocalDateTime to);
 }

@@ -87,6 +87,16 @@ public class BookingService {
         return BookingResponse.from(saved);
     }
 
+    public List<BookingResponse> getMyBookings(Long customerId) {
+        return bookingRepository.findByCustomerIdOrderByBookingDateDesc(customerId)
+                .stream().map(BookingResponse::from).toList();
+    }
+
+    public List<BookingResponse> getAll() {
+        return bookingRepository.findAllByOrderByBookingDateDesc()
+                .stream().map(BookingResponse::from).toList();
+    }
+
 
     private ShowtimeResponse fetchShowtime(String showtimeId) {
         try {
